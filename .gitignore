@@ -1,0 +1,27 @@
+# IntelliJ IDEA files
+.idea/
+
+# Gradle specific files
+.gradle/
+build/
+pruebas/
+# Compiled Java bytecode
+*.class
+
+# Generated files
+bin/
+out/
+gen/
+
+# Logs
+*.log
+
+# User-specific files
+*.iml
+*.ipr
+*.iws
+*.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
