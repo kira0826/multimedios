@@ -43,14 +43,13 @@ public class Audio implements Serializable {
             out.writeObject(data);
         }
     }
-
-    // Método para la deserialización personalizada
+    
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-
+        
         System.out.println("Estyo en el reader");
-
+        
         in.defaultReadObject(); // Deserializa los campos no transientes automáticamente
-
+        
         // Leer la longitud de la cola y luego los elementos
         int size = in.readInt();
         queue = new LinkedList<>();
@@ -59,8 +58,8 @@ public class Audio implements Serializable {
             System.out.println("trabajando reading");
         }
     }
+    
     */
-
     public Audio(LinkedList<byte[]> queue, AudioFormatWrapper audioFormatWrapper) {
         this.queue = queue;
         this.audioFormatWrapper = audioFormatWrapper;

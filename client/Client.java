@@ -10,16 +10,14 @@ import javax.sound.sampled.*;
 
 import multimedia.*;
 import protocolos.*;
+import servers.Receptionist;
 import users.User;
 import utilities.*;
 
 public class Client {
 
-    private ServerSocket serverSocket;
     private Socket socket; 
 
-    private ConnectionInfo serverConnectionInfo;
-    private ExecutorService threaadpool; 
     private ObjectOutputStream out;
     private ObjectInputStream in;
     private Scanner scanner;
@@ -30,12 +28,6 @@ public class Client {
 
         this.socket = new Socket(PropertiesConfig.getProperty("server.address"),
                         Integer.parseInt(PropertiesConfig.getProperty("port.receptionist")));
-        this.threaadpool = Executors.newFixedThreadPool(5);
-
-        this.serverSocket = new ServerSocket(0);
-
-        this.serverConnectionInfo = new ConnectionInfo(serverSocket.getLocalPort(), serverSocket.getInetAddress().getHostAddress());
-        
         this.out = new ObjectOutputStream(socket.getOutputStream());
         this.in = new ObjectInputStream(socket.getInputStream());
         this.scanner = new Scanner(System.in);
@@ -60,14 +52,15 @@ public class Client {
 
     private void init () throws IOException {
 
-        System.out.println("Se establece el servidor:" + "port:" + serverSocket.getLocalPort() + ":address:" + serverSocket.getInetAddress().getHostAddress());
 
         System.out.println("Por favor escribe el nombre de usuario");
 
                 
             String username = scanner.nextLine();
             
-            User user = new User(username, serverConnectionInfo);
+            User user = new User(username, new ConnectionInfo(socket.getLocalPort(), socket.getLocalAddress().getHostAddress()));
+
+            
 
             Sender.senderPacket(out,"initialUserSuscribeToDB" , user);
 
@@ -102,28 +95,7 @@ public class Client {
 
             writeMessages.start();
 
-            //Recepción de mensajes. 
-
-            Thread messageReceptionThread = new Thread(() -> {
-
-                try {
-
-                    System.out.println(messageCreator("En escucha de peticiones."));
-                    serverSocket.accept();
-                    System.out.println(messageCreator("Solucitud recibida."));
-                    threaadpool.execute(new ClientServices(getSocket()));
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-            });
-
-            messageReceptionThread.start();
-
-
-
-            while (socket.isConnected()) {
+            while (true) {
 
             Receiver.receivePacket(this.getClass(), in, this);
             System.out.println("oppaaaa");
@@ -158,6 +130,49 @@ public class Client {
         }catch(IOException exception){
             exception.printStackTrace();
         }
+    }
+
+    public void receiveAudio(byte [] audioBytes) {
+
+
+        
+        try{
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(audioBytes);
+        ObjectInputStream reader = new ObjectInputStream(bais);
+    
+        Audio audio = (Audio) reader.readObject();  
+
+        System.out.println("Reproduciendo audio...");
+        AudioFormat audioFormat = audio.getAudioFormatWrapper().toAudioFormat();
+
+        
+        Queue <byte[]> queue = audio.getQueueCopy();
+
+        SourceDataLine sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
+        sourceDataLine.open(audioFormat);
+        sourceDataLine.start();
+        
+        int counter=0;
+
+        while (!queue.isEmpty()) {
+            byte[] bytes = queue.poll();
+            sourceDataLine.write(bytes, 0, bytes.length);
+            counter++;
+        }
+
+        System.out.println("Reproducción finalizada.");
+        sourceDataLine.close();
+    }catch (LineUnavailableException e){
+        e.printStackTrace();
+    } catch (ClassNotFoundException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+    } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+    }
+    
     }
 
     public Audio recordAudio(AudioFormat audioFormat) {
@@ -221,34 +236,6 @@ public class Client {
         System.out.println(message);
 
     }
-
-    private String messageCreator (String message){
-
-        return "ClientServer:" + getServerConnectionInfo().getPort() + ": "+ message;
-    }
-
-    public ServerSocket getServerSocket() {
-        return serverSocket;
-    }
-
-
-
-    public Socket getSocket() {
-        return socket;
-    }
-
-
-
-    public ConnectionInfo getServerConnectionInfo() {
-        return serverConnectionInfo;
-    }
-
-
-
-    public ExecutorService getThreaadpool() {
-        return threaadpool;
-    }
-
 
 
     public ObjectOutputStream getOut() {
