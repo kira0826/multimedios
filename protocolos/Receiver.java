@@ -1,11 +1,10 @@
-package protocols;
+package protocolos;
 
-import java.beans.MethodDescriptor;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
-import java.lang.reflect.*;
-import java.sql.Time;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import packets.PacketFormat;
 

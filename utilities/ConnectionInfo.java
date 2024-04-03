@@ -7,7 +7,8 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 public class ConnectionInfo implements Serializable {
-    
+    private static final long serialVersionUID = 1L; 
+
     private int port; 
     private String address;
 

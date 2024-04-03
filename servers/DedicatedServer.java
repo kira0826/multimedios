@@ -2,24 +2,24 @@ package servers;
 
 import java.io.*;
 import java.net.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import interfaces.*;
+import multimedia.Audio;
 import packets.PacketFormat;
-import protocols.Receiver;
-import protocols.Sender;
+import protocolos.Receiver;
+import protocolos.Sender;
+import storage.WareHouse;
 import users.User;
 import utilities.*;
 
-public class DedicatedServer implements Runnable, IServerService{
+public class DedicatedServer implements Runnable{
 
-    
+
     private ObjectInputStream in; 
     private ObjectOutputStream out;
-    private ObjectInputStream inDB; 
-    private ObjectOutputStream outDB;
-    
     private Socket socketClient; 
-    private Socket socketDB;
-
     private User userForDedicated;
 
     public DedicatedServer (Socket socket){
@@ -31,12 +31,8 @@ public class DedicatedServer implements Runnable, IServerService{
         this.out = new ObjectOutputStream(socketClient.getOutputStream());
         this.in = new ObjectInputStream(socketClient.getInputStream());
 
-        int portDB  = Integer.parseInt(PropertiesConfig.getProperty("port.db"));
-        String address  = PropertiesConfig.getProperty("db.address");
-        this.socketDB = new Socket(InetAddress.getByName(address), portDB);
+    
 
-        this.outDB = new ObjectOutputStream(socketDB.getOutputStream());
-        this.inDB = new ObjectInputStream(socketDB.getInputStream());
             
         } catch (Exception e) {
             e.printStackTrace();
@@ -48,37 +44,86 @@ public class DedicatedServer implements Runnable, IServerService{
     public void run() {
         try{
 
-            System.out.println("Servidor dedicado iniciado.");
-
-
-            Thread clientListener = new Thread(()->{
-
-
-            // Database income
-
-                while (true) {
-
-                    System.out.println("Listo para recibir paquetes. ServidorDedicado:Server:ListenerOfDB");
-                    Receiver.receivePacket(DedicatedServer.class, inDB, this);
-                    
-                }
-                
-            });
-
-            clientListener.start();
-
-            //Server Income
-
             while (true) {
                 System.out.println("Listo para recibir paquetes. ServidorDedicado:Server:ListenerOfClient");
                 Receiver.receivePacket(DedicatedServer.class, in, this);
+
+                messageToResend(menu());
             }
+
 
         }catch (Exception e){
 
             e.printStackTrace();
 
         }
+    }
+
+    private String menu(){
+
+        return """
+                MENU DE SERVICIOS
+
+                {Cómo se debe escribir | Qué hace}
+
+                1. /enviarAudio nombreUsuarioDestino | Envio de audio. 
+
+
+                """;
+        
+    }
+
+
+
+
+    public void sendAudio(byte [] audioBytes,String recipient ){
+
+        
+        try {
+            
+        ByteArrayInputStream bais = new ByteArrayInputStream(audioBytes);
+        ObjectInputStream reader = new ObjectInputStream(bais);
+    
+        Audio audio = (Audio) reader.readObject();  
+
+        ConnectionInfo connectionInfo = WareHouse.getInstance().getClientInfoConnection(recipient);;
+
+        if (connectionInfo == null) {
+
+            messageToResend(messageCreator("No se pudo obtener la infoConnection de " + recipient, socketClient));
+            return;
+        }
+        
+        System.out.println("ADDRESS:" + InetAddress.getByName(connectionInfo.getAddress()));
+        System.out.println("PORT:" +connectionInfo.getPort());
+
+        Socket socket = new Socket(InetAddress.getByName(connectionInfo.getAddress()), connectionInfo.getPort());
+        
+
+        ObjectOutputStream outClientServer = new ObjectOutputStream(socket.getOutputStream());
+
+        Sender.senderPacket(outClientServer, "receiveAudio", audio);
+
+        System.out.println("Envio de audio para reproducir el hilo dedicado.");
+
+        outClientServer.close();
+        socket.close();
+        
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+
+        } catch (IOException e) {
+            e.printStackTrace();} catch (ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+    }
+
+
+    private String messageCreator(String response, Socket socket){
+
+        return "DedicatedServer:" + socket.getLocalPort() + response;
     }
 
     public void messageToShow(String message){
@@ -98,22 +143,31 @@ public class DedicatedServer implements Runnable, IServerService{
     }
 
 
-    public void initialUserSuscribeToDB(String username) {
+    public void initialUserSuscribeToDB(User user) {
 
-        
-        User user = new User(username,
-            new ConnectionInfo(socketClient.getPort(),
-            socketClient.getInetAddress().getHostAddress()));
+
+        try {
+            WareHouse.getInstance().initialUserSuscribeToDB(user);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
         userForDedicated = user;
 
-        Sender.senderPacket(outDB, "initialUserSuscribeToDB", user);
+        saveUserConnectionInfo();
 
 
     }
 
-    public void saveUserConnectionInfo(ConnectionInfo connectionInfo, String user) {
+    public void saveUserConnectionInfo() {
 
-        Sender.senderPacket(outDB, "saveUserConnectionInfo", connectionInfo,  user);
+        try {
+            WareHouse.getInstance().saveUserConnectionInfo(userForDedicated.getConnectionInfo(), userForDedicated.getUsername());
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
     }   
 }

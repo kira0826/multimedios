@@ -9,6 +9,7 @@ import utilities.ConnectionInfo;
 
 public class User implements Serializable{
 
+    private static final long serialVersionUID = 1L; // It's a good practice to include a serialVersionUID for Serializable classes
     private String username;
     private ConnectionInfo connectionInfo;
     private List<Audio> audioHistory; 

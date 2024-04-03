@@ -6,6 +6,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import storage.WareHouse;
 import utilities.PropertiesConfig;
 
 
@@ -20,6 +22,7 @@ public class Receptionist {
     public static void main(String[] args) {
 
         try {
+            WareHouse.getInstance();
             Receptionist receptionist = new Receptionist();
             receptionist.listen();
 
