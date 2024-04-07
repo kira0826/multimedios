@@ -1,4 +1,3 @@
-import java.util.Properties;
 
 class Main{
 

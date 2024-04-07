@@ -2,15 +2,14 @@ package client;
 
 import java.io.*;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.*;
 
 import multimedia.*;
 import protocolos.*;
-import servers.Receptionist;
 import users.User;
 import utilities.*;
 
@@ -21,7 +20,9 @@ public class Client {
     private ObjectOutputStream out;
     private ObjectInputStream in;
     private Scanner scanner;
-    
+    private User user; 
+    private AtomicBoolean onCall;
+
 
 
     public Client() throws IOException  {
@@ -31,6 +32,7 @@ public class Client {
         this.out = new ObjectOutputStream(socket.getOutputStream());
         this.in = new ObjectInputStream(socket.getInputStream());
         this.scanner = new Scanner(System.in);
+        this.onCall = new AtomicBoolean(true);
     }
 
 
@@ -60,7 +62,7 @@ public class Client {
             
             User user = new User(username, new ConnectionInfo(socket.getLocalPort(), socket.getLocalAddress().getHostAddress()));
 
-            
+            this.user = user;
 
             Sender.senderPacket(out,"initialUserSuscribeToDB" , user);
 
@@ -74,6 +76,7 @@ public class Client {
             String message = "";
                 
             while (true) {
+
                 System.out.println("Listo para tu petición: ");
                 message = scanner.nextLine();
 
@@ -83,14 +86,44 @@ public class Client {
 
                     
                     sendAudio(messageDiv[1]);
-
-                    System.out.println("Enviar audiooo falga");
                     
+                }else if (messageDiv[0].startsWith("/llamar")) {
+
+                requestCall(messageDiv[1]);   
+
+                }else if (messageDiv[0].startsWith("/crearGrupo")){
+
+                    createGroup(messageDiv[1]);
+
+                }else if (messageDiv[0].startsWith("/addUser")){
+
+                    for (int i = 2; i < messageDiv.length; i++) {
+
+                        addUserToGroup(messageDiv[1], messageDiv[i]);
+                        
+                    }
+
+                }else if (messageDiv[0].startsWith("/verGrupos")){
+
+                    Sender.senderPacket(out, "getAllGroups", null);
+
+                }else if (messageDiv[0].startsWith("/usuarios")){
+
+                    Sender.senderPacket(out, "usersDisplay", null);
+
+                }else if (messageDiv[0].startsWith("/callGroup")){
+
+
+                    System.out.println("Se fue por acaajsdaks ");
+
+                    requestGroupCall(messageDiv[1]);
+                }else if (messageDiv[0].startsWith("/finishCall")){
+
+                    finishCall();
                 }
 
 
             }
-
             });
 
             writeMessages.start();
@@ -98,12 +131,327 @@ public class Client {
             while (true) {
 
             Receiver.receivePacket(this.getClass(), in, this);
-            System.out.println("oppaaaa");
         }
     }
 
 
-    // Services
+
+    // Group creation methods
+
+    public void createGroup (String groupName){
+
+        Sender.senderPacket(out, "createGroup", groupName);
+
+    }
+
+
+    public void addUserToGroup (String groupName, String user ){
+
+        Sender.senderPacket(out, "addUserToGroup", groupName, user);
+
+    }
+
+    // Group call methods
+
+    public void finishCall(){
+
+        onCall.set(false);
+    }
+
+
+    public void setSenderToCallGroup(HashMap<String,ConnectionInfo> connections){
+
+        onCall.set(true);
+
+
+        Thread calling  = new Thread(()-> {
+
+                try {
+                    senderCall(null, -1,connections);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+
+            calling.start();
+
+
+    } 
+
+    public void setGroupDatagramSocketToReceiveInfo(String fromGroupName){
+
+        onCall.set(true);
+
+        try{
+            DatagramSocket datagramSocket =  new DatagramSocket(0);
+
+            Integer portMine = datagramSocket.getLocalPort();
+            String addressMine = datagramSocket.getLocalAddress().getHostName();
+
+            Sender.senderPacket(out, "fillGroupConnectionInfo", fromGroupName, user.getUsername(),  portMine, addressMine);
+
+            Thread receiver = new Thread(() -> {
+
+                callReceiver(datagramSocket);
+
+            });
+
+            receiver.start();
+
+        }catch(IOException e){
+
+            e.printStackTrace();
+        }
+    }
+
+    public void requestGroupCall(String group){
+
+        onCall.set(true);
+
+        
+        try {
+            DatagramSocket datagramSocket =  new DatagramSocket(0);
+
+            Integer port = datagramSocket.getLocalPort();
+            String address = datagramSocket.getLocalAddress().getHostName();
+
+            Sender.senderPacket(out, "requestGroupCall", group, port, address);
+
+            Thread caller = new Thread(() -> {
+
+                callReceiver(datagramSocket);
+
+            });
+
+            caller.start();
+
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+        
+
+    }
+
+
+
+
+
+    // One to One Call Methods
+
+
+    public void finalCallConnection(Integer port,  String address){
+
+            onCall.set(true);
+
+
+            Thread calling  = new Thread(()-> {
+
+                try {
+                    senderCall(address, port,null);
+
+                    
+
+
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            });
+
+            calling.start();;
+        
+
+    } 
+
+
+    public void reciverRequestCall (String sender, Integer port, String  address){
+
+        onCall.set(true);
+
+
+        try{
+            DatagramSocket datagramSocket =  new DatagramSocket(0);
+
+            Integer portMine = datagramSocket.getLocalPort();
+            String addressMine = datagramSocket.getLocalAddress().getHostName();
+
+            Sender.senderPacket(out, "callResponse", sender,  portMine, addressMine);
+
+            Thread receiver = new Thread(() -> {
+
+                callReceiver(datagramSocket);
+
+            });
+            receiver.start();
+
+            Thread calling = new Thread(() ->{
+                
+                try {
+                    senderCall(address, port,null );
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+
+            });
+            calling.start();
+
+
+
+        }catch(IOException e){
+
+            e.printStackTrace();
+        }
+    }
+
+
+
+    public void requestCall(String recipient){
+
+        onCall.set(true);
+        
+        try {
+            DatagramSocket datagramSocket =  new DatagramSocket(0);
+
+            Integer port = datagramSocket.getLocalPort();
+            String address = datagramSocket.getLocalAddress().getHostName();
+
+            Sender.senderPacket(out, "requestCall", recipient, user.getUsername(), port, address);
+
+            System.out.println("Despues de enviar.");
+            Thread caller = new Thread(() -> {
+
+                callReceiver(datagramSocket);
+
+                Sender.senderPacket(out, "finishCall", recipient);
+
+            });
+
+            caller.start();
+
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+        
+
+    }
+
+
+    // Functional call
+
+
+    public void callReceiver(DatagramSocket socket){
+        try {
+            final int BUFFER_SIZE = 1024 + 4;
+
+            byte[] buffer = new byte[BUFFER_SIZE];
+
+            // Configurar el reproductor de audio
+            AudioFormat audioFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
+            SourceDataLine sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
+            sourceDataLine.open(audioFormat);
+            sourceDataLine.start();
+
+            PlayerThread playerThread = new PlayerThread(audioFormat,BUFFER_SIZE );
+            playerThread.start();
+
+            // Recibir los paquetes y reproducir el audio
+            int count = 0;
+            while (onCall.get()) {
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                socket.receive(packet);
+                buffer = packet.getData();
+                ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+                int packetCount = byteBuffer.getInt();
+                if (packetCount == -1) {
+                    //System.out.println("Received last packet " + count);
+                    break;
+                } else {
+                    byte[] data = new byte[1024];
+                    byteBuffer.get(data, 0, data.length);
+                    // System.arraycopy(buffer, 0, data, 0, data.length);
+                    playerThread.addBytes(data);
+                    //System.out.println("Received packet " + packetCount + " current: " + count);
+
+                }
+                count++;
+            }
+
+
+            socket.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+    public  void senderCall(String ip, int port, HashMap<String, ConnectionInfo> map) throws Exception {
+
+        AudioFormat format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
+        
+        // Obtener la línea de entrada del micrófono
+        DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
+        TargetDataLine line = (TargetDataLine) AudioSystem.getLine(info);
+
+        // Abrir la línea de entrada del micrófono y comenzar la captura de audio
+        line.open(format);
+        line.start();
+
+        System.out.println("Capturando audio del micrófono...");
+
+        SourceDataLine sourceDataLine = AudioSystem.getSourceDataLine(format);
+        sourceDataLine.open(format);
+        sourceDataLine.start();
+
+        // Buffer para almacenar los datos de audio capturados
+        byte[] buffer = new byte[1024];
+        int bytesRead;
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1028);
+
+        DatagramSocket socket = new DatagramSocket();
+
+
+
+        while (onCall.get()) {
+            byteBuffer.clear();
+            bytesRead = line.read(buffer, 0, buffer.length);
+            if (bytesRead > 0) {
+                byteBuffer.putInt(bytesRead);
+                byteBuffer.put(buffer, 0, bytesRead);
+
+                if (map == null ){
+                    sendAudioCall(ip, port, byteBuffer.array(), socket);
+                }else{
+
+                    sendAudioToGroup(map, byteBuffer.array(), socket);
+                }
+            }
+        }
+
+        socket.close();
+    }
+
+    public  void sendAudioCall(String ip, int port, byte[] audioData, DatagramSocket socket) throws Exception {
+        InetAddress address = InetAddress.getByName(ip);
+        DatagramPacket packet = new DatagramPacket(audioData, audioData.length, address, port);
+        socket.send(packet);
+    }
+
+    public void sendAudioToGroup(HashMap<String, ConnectionInfo> connections,byte[] audioData, DatagramSocket socket ) throws Exception {
+
+
+        for (ConnectionInfo cInfo : connections.values()) {
+
+            InetAddress address = InetAddress.getByName(cInfo.getAddress());
+            DatagramPacket packet = new DatagramPacket(audioData, audioData.length, address, cInfo.getPort());
+            socket.send(packet);
+   
+        }
+    }
+
+
 
     public void sendAudio(String recepientName){
 
@@ -121,11 +469,9 @@ public class Client {
         byte [] audioBytesSerialize =  outputStream.toByteArray();
             
 
-        System.out.println("PREVIO AL ENVIO");
 
         Sender.senderPacket(out, "sendAudio", audioBytesSerialize , recepientName);
 
-        System.out.println("BUEN ENVÍO");
 
         }catch(IOException exception){
             exception.printStackTrace();
@@ -233,6 +579,7 @@ public class Client {
     }
 
     public void messageDisplay(String message){
+
         System.out.println(message);
 
     }
@@ -254,6 +601,9 @@ public class Client {
         return scanner;
     }
 
+    public AtomicBoolean getOnCall() {
+        return onCall;
+    }
     
 
 

@@ -16,12 +16,9 @@ public class Sender  {
      
         PacketFormat packet = new PacketFormat(operation, parameters);
     
-        try {
-
-                
+        try {                
                 outer.writeObject(packet);
                 outer.flush();
-
             } catch (IOException  e) {
                 e.printStackTrace();
             }catch (Exception e){

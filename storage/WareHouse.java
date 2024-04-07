@@ -17,6 +17,9 @@ public class WareHouse {
     private Map<User,ConnectionInfo> userToSocket;
     private Map<String, Group> stringToGroup; 
 
+
+    //Constructors
+
     private WareHouse() {
         
         this.stringToGroup = new HashMap<>();
@@ -31,19 +34,26 @@ public class WareHouse {
         return instance;
     }
 
-    public Map<String, User> getStringToUser() {
-        return stringToUser;
+    // Storage methods
+
+
+
+    //Group methods
+
+
+    public void addUserToGroup (String group, String user){
+
+        getStringToGroup().get(group).getUsersSubscribed().add(user);
+
     }
 
+    public void fillConnectionInfoForGroupParticipant(String group, String username, ConnectionInfo connectionInfo){
 
-    public Map<String, Group> getStringToGroup() {
-        return stringToGroup;
+        getStringToGroup().get(group).getConnectionInfoForGroupOperations().put(username, connectionInfo);
+
     }
 
-
-    public Map<User, ConnectionInfo> getUserToSocket() {
-        return userToSocket;
-    }
+    //Init methods
 
     public ConnectionInfo getClientInfoConnection(String username){
 
@@ -65,8 +75,6 @@ public class WareHouse {
         
         try {
             
-            
-            
             WareHouse.getInstance().getStringToUser().put(user.getUsername(), user);
             WareHouse.getInstance().getUserToSocket().put(user, user.getConnectionInfo() );
             
@@ -87,10 +95,7 @@ public class WareHouse {
             WareHouse.getInstance().getUserToSocket().put(userObject, connectionInfo);
             
             String message = messageCreator("Se almacena connectionInfo de " + user + ".");
-            
-
-            
-            System.out.println("message");
+            System.out.println(message);
             
         } catch (IOException e) {
             
@@ -98,11 +103,50 @@ public class WareHouse {
         }
         
     }
-    
+
+    //util
+
+    public String getAllGroups() {
+        StringBuilder groups = new StringBuilder();
+        int count = 1;
+        for (String key : stringToGroup.keySet()) {
+            groups.append(count).append(". ").append(key).append("\n");
+            count++;
+        }
+        return groups.toString();
+    }
+
+    public String getAllUserKeys() {
+        StringBuilder keys = new StringBuilder();
+        int count = 1;
+        for (String key : stringToUser.keySet()) {
+            keys.append(count).append(". ").append(key).append("\n");
+            count++;
+        }
+        return keys.toString();
+    }
+
     public static String messageCreator(String message){
     
         return "DataBase:" + message;
         
+    }
+
+
+    //getters and Setters.
+
+    public Map<String, User> getStringToUser() {
+        return stringToUser;
+    }
+
+
+    public Map<String, Group> getStringToGroup() {
+        return stringToGroup;
+    }
+
+
+    public Map<User, ConnectionInfo> getUserToSocket() {
+        return userToSocket;
     }
 
     

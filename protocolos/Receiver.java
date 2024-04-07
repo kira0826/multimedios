@@ -29,6 +29,28 @@ public class Receiver <T> {
         String operation = packet.getOperation();
         Serializable[] parameters = packet.getParameters();
 
+        Method method = null;
+
+        if (parameters == null) {
+
+            method = clazz.getMethod(operation, null);
+
+        if (method.canAccess(object)) {
+
+            System.out.println("El metodo puede acceder la instancia.");
+            
+            method.invoke(object, null);
+
+            System.out.println("Se invoca el método " + operation );
+
+            
+        }else{
+            System.out.println("NO se puede acceder la instancia con el metodo " + method.getName());
+        }
+
+
+            
+        }else{
 
         Class<?> [] parameterTypes = new Class <?> [parameters.length];
 
@@ -44,7 +66,7 @@ public class Receiver <T> {
             castedParameters[i] = parameterTypes[i].cast(parameters[i]);
         }
 
-        Method method = clazz.getMethod(operation, parameterTypes);
+        method = clazz.getMethod(operation, parameterTypes);
 
         if (method.canAccess(object)) {
 
@@ -58,6 +80,12 @@ public class Receiver <T> {
         }else{
             System.out.println("NO se puede acceder la instancia con el metodo " + method.getName());
         }
+
+
+        }
+        
+
+        
 
             
         } catch (IllegalAccessException e) {
