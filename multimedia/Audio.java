@@ -13,6 +13,8 @@ public class Audio implements Serializable {
 
     private LinkedList <byte[]> queue;
     private AudioFormatWrapper audioFormatWrapper;
+    private String to;
+    private String from;
     
     
     public LinkedList<byte[]> getQueueCopy() {
@@ -61,11 +63,16 @@ public class Audio implements Serializable {
     
     */
     public Audio(LinkedList<byte[]> queue, AudioFormatWrapper audioFormatWrapper) {
+
+        this.to = "No one.";
+        this.from = "No one.";
         this.queue = queue;
         this.audioFormatWrapper = audioFormatWrapper;
     }
 
 
+
+    
     public Queue<byte[]> getQueue() {
         return queue;
     }
@@ -74,6 +81,38 @@ public class Audio implements Serializable {
     public AudioFormatWrapper getAudioFormatWrapper() {
         return audioFormatWrapper;
     }
+
+
+    public String getTo() {
+        return to;
+    }
+
+
+    public void setQueue(LinkedList<byte[]> queue) {
+        this.queue = queue;
+    }
+
+
+    public void setAudioFormatWrapper(AudioFormatWrapper audioFormatWrapper) {
+        this.audioFormatWrapper = audioFormatWrapper;
+    }
+
+
+    public void setTo(String to) {
+        this.to = to;
+    }
+
+
+    public String getFrom() {
+        return from;
+    }
+
+
+    public void setFrom(String from) {
+        this.from = from;
+    }
+
+    
     
   
 }

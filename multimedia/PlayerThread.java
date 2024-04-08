@@ -65,8 +65,6 @@ public class PlayerThread extends Thread {
                 e.printStackTrace();
             }
         }
-
-        sourceDataLine.close();
     }
 
 

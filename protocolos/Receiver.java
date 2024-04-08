@@ -17,14 +17,12 @@ public class Receiver <T> {
         Object response = in.readObject();
 
         if(response instanceof String ){
-            System.out.print("Se ha recibido el mensaje: ");
             System.out.println(response);
             return;
         }
 
         PacketFormat packet = (PacketFormat) response;
 
-        System.out.println("Se ha recibido el paquete.");
 
         String operation = packet.getOperation();
         Serializable[] parameters = packet.getParameters();
@@ -37,11 +35,9 @@ public class Receiver <T> {
 
         if (method.canAccess(object)) {
 
-            System.out.println("El metodo puede acceder la instancia.");
             
             method.invoke(object, null);
 
-            System.out.println("Se invoca el método " + operation );
 
             
         }else{
@@ -54,11 +50,9 @@ public class Receiver <T> {
 
         Class<?> [] parameterTypes = new Class <?> [parameters.length];
 
-        System.out.println("Metodo a invocar: " + operation );
 
         for (int i = 0; i < parameterTypes.length; i++) {
             parameterTypes[i] = parameters[i].getClass();
-            System.out.print("Parameter Type:  " + i + ": " + parameterTypes[i].getCanonicalName() +  " | " );
         }
 
         Object[] castedParameters = new Object[parameters.length];
@@ -70,11 +64,9 @@ public class Receiver <T> {
 
         if (method.canAccess(object)) {
 
-            System.out.println("El metodo puede acceder la instancia.");
             
             method.invoke(object, castedParameters);
 
-            System.out.println("Se invoca el método " + operation );
 
             
         }else{

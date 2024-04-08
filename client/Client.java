@@ -75,29 +75,28 @@ public class Client {
             
         Thread writeMessages = new Thread(() -> {
 
-            String message = "";
+            String messagev = "";
                 
             while (true) {
 
-                System.out.println("Listo para tu petición: ");
-                message = scanner.nextLine();
+                messagev = scanner.nextLine();
 
-                String [] messageDiv = message.split(" ");
+                String [] messageDiv = messagev.split(" ");
                 
-                if (messageDiv[0].startsWith("/enviarAudio")) {
+                if (messageDiv[0].equals("/enviarAudio")) {
 
                     
-                    sendAudio(messageDiv[1]);
+                    sendAudio(messageDiv[1], false);
                     
-                }else if (messageDiv[0].startsWith("/llamar")) {
+                }else if (messageDiv[0].equals("/llamar")) {
 
                 requestCall(messageDiv[1]);   
 
-                }else if (messageDiv[0].startsWith("/crearGrupo")){
+                }else if (messageDiv[0].equals("/crearGrupo")){
 
                     createGroup(messageDiv[1]);
 
-                }else if (messageDiv[0].startsWith("/addUser")){
+                }else if (messageDiv[0].equals("/addUser")){
 
                     for (int i = 2; i < messageDiv.length; i++) {
 
@@ -105,25 +104,76 @@ public class Client {
                         
                     }
 
-                }else if (messageDiv[0].startsWith("/verGrupos")){
+                }else if (messageDiv[0].equals("/verGrupos")){
 
                     Sender.senderPacket(out, "getAllGroups", null);
 
-                }else if (messageDiv[0].startsWith("/usuarios")){
+                }else if (messageDiv[0].equals("/usuarios")){
 
                     Sender.senderPacket(out, "usersDisplay", null);
 
-                }else if (messageDiv[0].startsWith("/callGroup")){
-
-
-                    System.out.println("Se fue por acaajsdaks ");
+                }else if (messageDiv[0].equals("/callGroup")){
 
                     requestGroupCall(messageDiv[1]);
 
-                }else if (messageDiv[0].startsWith("x")){
+                }else if (messageDiv[0].equals("x")){
 
                     intialCallFinisher();
+                }else if (messageDiv[0].equals("/reproducir")){
+                    
+                    reproduceAudioSelected(Integer.parseInt(messageDiv[1]));
+                }else if (messageDiv[0].equals("/audios")){
+                    
+                    user.listAudioHistory();
+
+
+                }else if (messageDiv[0].equals("/Hmsj")){
+                    
+                    user.listMessageHistory();
+
+                }else if (messageDiv[0].equals("/Gaudio")){
+                    
+                    sendAudio(messageDiv[1], true);
+
+                }else if (messageDiv[0].equals("/msj")){
+
+                    String msj = "";
+
+                    for (int i = 2; i < messageDiv.length; i++) {
+
+                        msj+= messageDiv[i] + " ";
+                
+                    }
+                    
+                    sendMessage(messageDiv[1], msj, false);
+
+                }else if (messageDiv[0].equals("/Gmsj")){
+
+                    String msj = "";
+
+                    for (int i = 2; i < messageDiv.length; i++) {
+
+                        msj+= messageDiv[i] + " ";
+                
+                    }
+
+                    sendMessage(messageDiv[1], msj, true);
+                }else if (messageDiv[0].equals("/menu")){
+                    
+                    menu();
+
+                }else{
+
+                    System.out.println("Comando incorrecto :(");
                 }
+
+                try {
+                    Thread.sleep(1000); 
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                System.out.println("Listo para tu petición: ");
 
 
             }
@@ -135,6 +185,31 @@ public class Client {
 
             Receiver.receivePacket(this.getClass(), in, this);
         }
+    }
+
+    public void menu(){
+
+        Sender.senderPacket(out, "sendMenu", null);
+    }
+
+
+    //Mensajes 
+
+
+    public void sendMessage(String to,  String message, boolean toGroup){
+
+        String header = user.getUsername() + ": " + message;
+
+        Message ms = new Message(header, user.getUsername(), to);
+
+        user.getMessages().add(ms);
+
+        if (toGroup) {
+
+            Sender.senderPacket(out, "sendMessageToGroup", to, header);
+            
+        }else Sender.senderPacket(out, "sendMessageToUser",to,  header);
+
     }
 
 
@@ -470,15 +545,43 @@ public class Client {
         }
     }
 
+// Envio de audios:
 
 
-    public void sendAudio(String recepientName){
+    public void reproduceAudioSelected (int position){
+
+
+        Audio audio = user.getAudioHistory().get(position);
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        ObjectOutputStream objectOutputStream;
+        try {
+            objectOutputStream = new ObjectOutputStream(outputStream);
+            objectOutputStream.writeObject(audio);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+
+        byte [] audioBytesSerialize =  outputStream.toByteArray();
+
+        receiveAudio(audioBytesSerialize);
+
+    }
+
+    public void sendAudio(String recepientName, boolean toGroup){
 
         try{
 
         AudioFormat audioFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
         
         Audio  audio = recordAudio(audioFormat);
+
+        audio.setTo(recepientName);
+        audio.setFrom(user.getUsername());
+
+        user.getAudioHistory().add(audio);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
@@ -488,8 +591,12 @@ public class Client {
         byte [] audioBytesSerialize =  outputStream.toByteArray();
             
 
+        if (toGroup) {
 
-        Sender.senderPacket(out, "sendAudio", audioBytesSerialize , recepientName);
+            Sender.senderPacket(out, "sendAudioToGroup", audioBytesSerialize , recepientName);
+            
+        }else Sender.senderPacket(out, "sendAudio", audioBytesSerialize , recepientName);
+        
 
 
         }catch(IOException exception){

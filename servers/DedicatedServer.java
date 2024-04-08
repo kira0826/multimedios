@@ -3,7 +3,6 @@ package servers;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import protocolos.Receiver;
@@ -44,11 +43,12 @@ public class DedicatedServer implements Runnable{
     public void run() {
         try{
 
+            sendMenu();
+
             while (true) {
                 System.out.println("Listo para recibir paquetes. ServidorDedicado:Server:ListenerOfClient");
                 Receiver.receivePacket(DedicatedServer.class, in, this);
 
-                messageToResend(menu());
             }
 
 
@@ -57,6 +57,40 @@ public class DedicatedServer implements Runnable{
             e.printStackTrace();
 
         }
+    }
+
+
+    //Messages 
+
+    public void sendMessageToUser (String to,  String ms){
+
+        DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(to);
+    
+        Sender.senderPacket(dedicatedServer.out, "messageDisplay", ms);
+            
+    }
+
+    public void sendMessageToGroup (String group,  String ms){
+
+
+        ArrayList<String> arrayList = null;
+
+
+        try {
+            arrayList = WareHouse.getInstance().getStringToGroup().get(group).getUsersSubscribed();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+
+        for (String participantString : arrayList) {
+                
+            DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(participantString);
+            Sender.senderPacket(dedicatedServer.out, "messageDisplay", ms);
+            
+        }
+            
     }
 
     
@@ -231,36 +265,35 @@ public class DedicatedServer implements Runnable{
 
 
     public void sendAudio(byte [] audioBytes,String recipient ){
+                
+        DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(recipient);
 
+        Sender.senderPacket(dedicatedServer.getOut(), "receiveAudio", audioBytes);
         
+    }
+
+
+    public void sendAudioToGroup (byte [] audioBytes, String group){
+
+        ArrayList<String> arrayList = null;
+
+
         try {
-            
+            arrayList = WareHouse.getInstance().getStringToGroup().get(group).getUsersSubscribed();
 
-        ConnectionInfo connectionInfo = WareHouse.getInstance().getClientInfoConnection(recipient);;
+        } catch (IOException e) {
 
-        if (connectionInfo == null) {
+            e.printStackTrace();
 
-            messageToResend(messageCreator("No se pudo obtener la infoConnection de " + recipient, socketClient));
-            return;
         }
 
 
-        
-        System.out.println("ADDRESS:" + InetAddress.getByName(connectionInfo.getAddress()));
-        System.out.println("PORT:" +connectionInfo.getPort());
+        for (String participantString : arrayList) {
+                
+            DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(participantString);
+            Sender.senderPacket(dedicatedServer.out, "receiveAudio", audioBytes);
             
-        DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(recipient);
-
-        System.out.println("previo envio");
-        Sender.senderPacket(dedicatedServer.getOut(), "receiveAudio", audioBytes);
-        System.out.println("Se envia");
-        
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-
-        } catch (IOException e) {
-            e.printStackTrace();} 
-
+        }
 
     }
 
@@ -305,31 +338,62 @@ public class DedicatedServer implements Runnable{
     private String menu(){
 
         return """
-                MENU DE SERVICIOS
+                MENU DE COMANDOS
 
                 {Cómo se debe escribir | Qué hace}
 
-                /enviarAudio nombreUsuarioDestino
+                --------------------------------------------------
 
-                /audioGrupo nombreDeGru
+                COMANDO GENERAL:
 
-                /llamar nombreUsuarioDestino
+                /menu | Solicita el menu de operaciones.
 
-                /callGroup nombreDeGrupo
+                /usuarios   |   Visualiza los clientes.
 
-                /mensaje nombreUsuarioDestino
+                --------------------------------------------------
+                COMANDOS PARA LA CREACIÓN DE GRUPO:
 
-                /mensajeGrupo nombreDeGrupo
+                /crearGrupo nombreDeGrupo   | Crea un grupo.
 
-                /crearGrupo nombreDeGrupo
+                /verGrupos  |   Visualiza los grupos creados.
 
-                /addUser nombreDeGrupo nombreDeUsuario nombreDeUsuario.. 
+                /addUser nombreDeGrupo nombreDeUsuarioA nombreDeUsuarioB ...  
 
-                /verGrupos
+                --------------------------------------------------
 
-                /usuarios
+                COMANDOS PARA LOS AUDIOS:
 
-                x   | Escribe x y presiona enter para finalizar la llamada.
+                /enviarAudio nombreUsuarioDestino   |   Enviar audio a un usuario.
+
+                /Gaudio nombreDeGrupo | Enviar audio a grupo.
+
+                /audios     | ver historial de audios.
+
+                /reproducir numeroAsociado | Reproduce un audio dado su índice, para ello despliegue el historial de audios.
+
+                --------------------------------------------------
+
+                COMANDOS PARA MENSAJES:
+
+                /msj nombreUsuarioDestino mensaje | Enviar mensajes
+
+                /Gmsj nombreDeGrupo mensaje | Enviar mensaje a grupo 
+
+                /Hmsj   | Ver historial de mensajes.
+
+                --------------------------------------------------
+
+                COMANDOS PARA LLAMADAS:
+
+                /llamar nombreUsuarioDestino    | Llamada uno a uno.
+
+                /callGroup nombreDeGrupo    |   Llamada grupal.
+
+                x   | Escribe x y presiona enter para finalizar una llamada.
+
+                --------------------------------------------------
+
+                Listo para tu petición:
 
                 """;
         
@@ -384,6 +448,11 @@ public class DedicatedServer implements Runnable{
     public void messageToShow(String message){
 
         System.out.println(message);
+    }
+
+    public void sendMenu(){
+
+        Sender.senderPacket(out, "messageDisplay", menu());
     }
 
 
