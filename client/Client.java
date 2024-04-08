@@ -231,6 +231,8 @@ public class Client {
 
     public void finishCall(){
 
+
+        System.out.println("Seteo falso no incial");
         onCall.set(false);
 
     }
@@ -242,6 +244,12 @@ public class Client {
     public void intialCallFinisher(){
 
         onCall.set(false);
+
+        
+            for (String user : groupConnections.keySet()) {
+                System.out.println(user);
+            }
+        
 
         Sender.senderPacket(out, "finishCall", groupConnections);
 
@@ -405,6 +413,7 @@ public class Client {
             Sender.senderPacket(out, "requestCall", recipient, user.getUsername(), port, address);
 
             System.out.println("Despues de enviar.");
+            
             Thread caller = new Thread(() -> {
 
                 callReceiver(datagramSocket);
@@ -428,6 +437,7 @@ public class Client {
 
     public void callReceiver(DatagramSocket socket){
 
+        System.out.println("Entro en el call receiver");
         onCall.set(true);
 
         try {
@@ -441,15 +451,24 @@ public class Client {
             sourceDataLine.open(audioFormat);
             sourceDataLine.start();
 
+            System.out.println("despues del dataline");
             PlayerThread playerThread = new PlayerThread(audioFormat,BUFFER_SIZE, onCall);
-            playerThread.start();
 
+            System.out.println("Boolean:" + onCall.get());
+            playerThread.start();
+            System.out.println("Desdepues del player start");
             // Recibir los paquetes y reproducir el audio
             int count = 0;
-
             while (onCall.get()) {
+
+                System.out.println("aca en el while de arriba");
+
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+
+                System.out.println("antes del receive");
                 socket.receive(packet);
+                System.out.println("Despues del receive");
+
                 buffer = packet.getData();
                 ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
                 int packetCount = byteBuffer.getInt();
@@ -457,17 +476,24 @@ public class Client {
                     //System.out.println("Received last packet " + count);
                     break;
                 } else {
+
+                    if (!onCall.get()) break;
+
                     byte[] data = new byte[1024];
                     byteBuffer.get(data, 0, data.length);
                     // System.arraycopy(buffer, 0, data, 0, data.length);
                     playerThread.addBytes(data);
                     //System.out.println("Received packet " + packetCount + " current: " + count);
+                    System.out.println("aca en el while de abajo");
 
                 }
                 count++;
             }
 
+            playerThread.join();
 
+            System.out.println("Finaliza el callReceiver.");
+            sourceDataLine.close();
             socket.close();
 
 

@@ -22,7 +22,6 @@ public class PlayerThread extends Thread {
                     audioFormat.getFrameSize()
                     / bufferSize;
 
-            System.out.println("Max items in queue: " + MAX_ITEMS_IN_QUEUE);
             buffer = new ArrayBlockingQueue<>(MAX_ITEMS_IN_QUEUE, true);
             sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
             sourceDataLine.open(audioFormat);
@@ -45,27 +44,36 @@ public class PlayerThread extends Thread {
     }
 
     public void run() {
+        try {
+
+        int counter =0;
         while (onCall.get()) {
-            try {
                 if (buffer.isEmpty()) {
                     if (packes > 0) {
-                        System.out.println("Packets: write " + packes + " add Count: " + count);
                         packes = 0;
                         count = 0;
                     }
                     Thread.yield();
                     continue;
                 }
-                byte[] bytes = buffer.take();
+
+                if (!onCall.get()) {
+                    break;
+                }
+                byte[] bytes = buffer.poll();
                 packes++;
                 sourceDataLine.write(bytes, 0, bytes.length);
+
+                System.out.println("En PLayer thread" + counter++);
+
                 // System.out.println("Written " + w + " bytes to sound card. " +
                 // buffer.size());
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
+        System.out.println("Fuera de player");
+
     }
-
-
 }

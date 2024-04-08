@@ -5,11 +5,9 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
-import protocolos.Receiver;
-import protocolos.Sender;
+import protocolos.*;
 import storage.WareHouse;
-import users.Group;
-import users.User;
+import users.*;
 import utilities.*;
 
 public class DedicatedServer implements Runnable{
@@ -337,65 +335,35 @@ public class DedicatedServer implements Runnable{
 
     private String menu(){
 
-        return """
-                MENU DE COMANDOS
-
-                {Cómo se debe escribir | Qué hace}
-
-                --------------------------------------------------
-
-                COMANDO GENERAL:
-
-                /menu | Solicita el menu de operaciones.
-
-                /usuarios   |   Visualiza los clientes.
-
-                --------------------------------------------------
-                COMANDOS PARA LA CREACIÓN DE GRUPO:
-
-                /crearGrupo nombreDeGrupo   | Crea un grupo.
-
-                /verGrupos  |   Visualiza los grupos creados.
-
-                /addUser nombreDeGrupo nombreDeUsuarioA nombreDeUsuarioB ...  
-
-                --------------------------------------------------
-
-                COMANDOS PARA LOS AUDIOS:
-
-                /enviarAudio nombreUsuarioDestino   |   Enviar audio a un usuario.
-
-                /Gaudio nombreDeGrupo | Enviar audio a grupo.
-
-                /audios     | ver historial de audios.
-
-                /reproducir numeroAsociado | Reproduce un audio dado su índice, para ello despliegue el historial de audios.
-
-                --------------------------------------------------
-
-                COMANDOS PARA MENSAJES:
-
-                /msj nombreUsuarioDestino mensaje | Enviar mensajes
-
-                /Gmsj nombreDeGrupo mensaje | Enviar mensaje a grupo 
-
-                /Hmsj   | Ver historial de mensajes.
-
-                --------------------------------------------------
-
-                COMANDOS PARA LLAMADAS:
-
-                /llamar nombreUsuarioDestino    | Llamada uno a uno.
-
-                /callGroup nombreDeGrupo    |   Llamada grupal.
-
-                x   | Escribe x y presiona enter para finalizar una llamada.
-
-                --------------------------------------------------
-
-                Listo para tu petición:
-
-                """;
+        return "MENU DE COMANDOS\n\n" +
+            "{Cómo se debe escribir | Qué hace}\n\n" +
+            "--------------------------------------------------\n\n" +
+            "COMANDO GENERAL:\n\n" +
+            "/menu | Solicita el menu de operaciones.\n\n" +
+            "/usuarios   |   Visualiza los clientes.\n\n" +
+            "--------------------------------------------------\n\n" +
+            "COMANDOS PARA LA CREACIÓN DE GRUPO:\n\n" +
+            "/crearGrupo nombreDeGrupo   | Crea un grupo.\n\n" +
+            "/verGrupos  |   Visualiza los grupos creados.\n\n" +
+            "/addUser nombreDeGrupo nombreDeUsuarioA nombreDeUsuarioB ...\n\n" +
+            "--------------------------------------------------\n\n" +
+            "COMANDOS PARA LOS AUDIOS:\n\n" +
+            "/enviarAudio nombreUsuarioDestino   |   Enviar audio a un usuario.\n\n" +
+            "/Gaudio nombreDeGrupo | Enviar audio a grupo.\n\n" +
+            "/audios     | ver historial de audios.\n\n" +
+            "/reproducir numeroAsociado | Reproduce un audio dado su índice, para ello despliegue el historial de audios.\n\n" +
+            "--------------------------------------------------\n\n" +
+            "COMANDOS PARA MENSAJES:\n\n" +
+            "/msj nombreUsuarioDestino mensaje | Enviar mensajes\n\n" +
+            "/Gmsj nombreDeGrupo mensaje | Enviar mensaje a grupo\n\n" +
+            "/Hmsj   | Ver historial de mensajes.\n\n" +
+            "--------------------------------------------------\n\n" +
+            "COMANDOS PARA LLAMADAS:\n\n" +
+            "/llamar nombreUsuarioDestino    | Llamada uno a uno.\n\n" +
+            "/callGroup nombreDeGrupo    |   Llamada grupal.\n\n" +
+            "x   | Escribe x y presiona enter para finalizar una llamada.\n\n" +
+            "--------------------------------------------------\n\n" +
+            "Listo para tu petición:\n\n";
         
     }
 

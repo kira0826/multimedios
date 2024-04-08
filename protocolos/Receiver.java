@@ -67,7 +67,7 @@ public class Receiver <T> {
             
             method.invoke(object, castedParameters);
 
-
+            System.out.println("Se invoca el metodo " + operation);
             
         }else{
             System.out.println("NO se puede acceder la instancia con el metodo " + method.getName());
