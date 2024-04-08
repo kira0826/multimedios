@@ -3,6 +3,8 @@ package servers;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import protocolos.Receiver;
 import protocolos.Sender;
@@ -148,13 +150,13 @@ public class DedicatedServer implements Runnable{
 
         int previous = 0;
 
-        while (groupParticipants.size() > selectedGroup.getConnectionInfoForGroupOperations().size()) {
-        int actual = selectedGroup.getConnectionInfoForGroupOperations().size();
+        while (groupParticipants.size() > selectedGroup.getConnections().size()) {
+        int actual = selectedGroup.getConnections().size();
 
             //System.out.println("Verificando xd: " + "suscritos: " + actual + " esperados: " + groupParticipants.size() );
             
             // agregar elementos al map
-            for (String key : selectedGroup.getConnectionInfoForGroupOperations().keySet()) {
+            for (String key : selectedGroup.getConnections().keySet()) {
                 System.out.println("Usuario registrado: " + key);
             }
             
@@ -171,7 +173,7 @@ public class DedicatedServer implements Runnable{
         for (String participantString : groupParticipants) {
                 
             DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(participantString);
-            Sender.senderPacket(dedicatedServer.out, "setSenderToCallGroup", selectedGroup.getConnectionInfoForGroupOperations());
+            Sender.senderPacket(dedicatedServer.out, "setSenderToCallGroup", selectedGroup.getConnections());
             
         }
     }
@@ -192,11 +194,16 @@ public class DedicatedServer implements Runnable{
 
     //One to one methods.
 
-    public void finishCall(String participant){
+    public void finishCall(ConcurrentHashMap<String, ConnectionInfo> toFinishCall){
 
-        DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(participant);
-        Sender.senderPacket(dedicatedServer.out, "finishCall", selectedGroup.getConnectionInfoForGroupOperations());
-       
+        System.out.println("Integrantes: " + toFinishCall.keySet().toString());
+
+        for (String  participant : toFinishCall.keySet()) {
+
+            DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(participant);
+            Sender.senderPacket(dedicatedServer.out, "finishCall", null);
+
+        }       
     }
 
 
@@ -209,11 +216,11 @@ public class DedicatedServer implements Runnable{
 
     }
 
-    public void callResponse (String from, Integer port, String address){
+    public void callResponse (String from, String sender, Integer port, String address){
 
         DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(from);
 
-        Sender.senderPacket(dedicatedServer.out, "finalCallConnection", port, address);
+        Sender.senderPacket(dedicatedServer.out, "finalCallConnection", sender, port, address);
 
 
 
@@ -322,7 +329,7 @@ public class DedicatedServer implements Runnable{
 
                 /usuarios
 
-                /finishCall
+                x   | Escribe x y presiona enter para finalizar la llamada.
 
                 """;
         

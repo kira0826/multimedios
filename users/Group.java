@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import utilities.ConnectionInfo;
 
@@ -11,8 +12,8 @@ public class Group implements Serializable {
 
     private String name;
     private ArrayList<String> usersSubscribed;
-    private HashMap<String, ConnectionInfo> connectionInfoForGroupOperations;
-
+// En tu clase WareHouse
+    private ConcurrentHashMap<String, ConnectionInfo> connections = new ConcurrentHashMap<>();
     
 
     //constructors
@@ -21,7 +22,7 @@ public class Group implements Serializable {
 
         this.name = name;
         this.usersSubscribed = new ArrayList<>();
-        this.connectionInfoForGroupOperations = new HashMap<>();
+        this.connections = new ConcurrentHashMap<>();
     }
 
     //getters and setters
@@ -29,9 +30,8 @@ public class Group implements Serializable {
     public ArrayList<String> getUsersSubscribed() {
         return usersSubscribed;
     }
-    public HashMap<String, ConnectionInfo> getConnectionInfoForGroupOperations() {
-        return connectionInfoForGroupOperations;
-    }
+    
+    
 
     public void addParticipant(String user){
 
@@ -45,5 +45,13 @@ public class Group implements Serializable {
             sb.append(i + 1).append(". ").append(usersSubscribed.get(i)).append("\n");
         }
         return sb.toString();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public ConcurrentHashMap<String, ConnectionInfo> getConnections() {
+        return connections;
     }
 }

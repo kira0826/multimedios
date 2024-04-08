@@ -49,7 +49,7 @@ public class WareHouse {
 
     public void fillConnectionInfoForGroupParticipant(String group, String username, ConnectionInfo connectionInfo){
 
-        getStringToGroup().get(group).getConnectionInfoForGroupOperations().put(username, connectionInfo);
+        getStringToGroup().get(group).getConnections().put(username, connectionInfo);
 
     }
 

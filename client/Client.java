@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.*;
@@ -16,12 +17,12 @@ import utilities.*;
 public class Client {
 
     private Socket socket; 
-
     private ObjectOutputStream out;
     private ObjectInputStream in;
     private Scanner scanner;
     private User user; 
     private AtomicBoolean onCall;
+    private ConcurrentHashMap<String, ConnectionInfo> groupConnections;
 
 
 
@@ -33,6 +34,7 @@ public class Client {
         this.in = new ObjectInputStream(socket.getInputStream());
         this.scanner = new Scanner(System.in);
         this.onCall = new AtomicBoolean(true);
+        this.groupConnections = new ConcurrentHashMap<>();
     }
 
 
@@ -117,9 +119,10 @@ public class Client {
                     System.out.println("Se fue por acaajsdaks ");
 
                     requestGroupCall(messageDiv[1]);
-                }else if (messageDiv[0].startsWith("/finishCall")){
 
-                    finishCall();
+                }else if (messageDiv[0].startsWith("x")){
+
+                    intialCallFinisher();
                 }
 
 
@@ -151,15 +154,28 @@ public class Client {
 
     }
 
-    // Group call methods
-
     public void finishCall(){
 
         onCall.set(false);
+
+    }
+
+    
+
+    // Group call methods
+
+    public void intialCallFinisher(){
+
+        onCall.set(false);
+
+        Sender.senderPacket(out, "finishCall", groupConnections);
+
     }
 
 
-    public void setSenderToCallGroup(HashMap<String,ConnectionInfo> connections){
+    public void setSenderToCallGroup(ConcurrentHashMap<String, ConnectionInfo> connections){
+
+        groupConnections = connections;
 
         onCall.set(true);
 
@@ -174,7 +190,6 @@ public class Client {
             });
 
             calling.start();
-
 
     } 
 
@@ -239,18 +254,14 @@ public class Client {
     // One to One Call Methods
 
 
-    public void finalCallConnection(Integer port,  String address){
+    public void finalCallConnection(String from, Integer port,  String address){
 
-            onCall.set(true);
-
+            groupConnections.put(from, new ConnectionInfo(port, address));
 
             Thread calling  = new Thread(()-> {
 
                 try {
                     senderCall(address, port,null);
-
-                    
-
 
                 } catch (Exception e) {
                     // TODO Auto-generated catch block
@@ -258,15 +269,15 @@ public class Client {
                 }
             });
 
-            calling.start();;
+            calling.start();
         
-
     } 
 
 
     public void reciverRequestCall (String sender, Integer port, String  address){
 
-        onCall.set(true);
+        groupConnections.put(sender, new ConnectionInfo(port, address));
+
 
 
         try{
@@ -275,7 +286,7 @@ public class Client {
             Integer portMine = datagramSocket.getLocalPort();
             String addressMine = datagramSocket.getLocalAddress().getHostName();
 
-            Sender.senderPacket(out, "callResponse", sender,  portMine, addressMine);
+            Sender.senderPacket(out, "callResponse", sender, user.getUsername(),  portMine, addressMine);
 
             Thread receiver = new Thread(() -> {
 
@@ -298,6 +309,7 @@ public class Client {
 
 
 
+
         }catch(IOException e){
 
             e.printStackTrace();
@@ -308,7 +320,6 @@ public class Client {
 
     public void requestCall(String recipient){
 
-        onCall.set(true);
         
         try {
             DatagramSocket datagramSocket =  new DatagramSocket(0);
@@ -323,11 +334,11 @@ public class Client {
 
                 callReceiver(datagramSocket);
 
-                Sender.senderPacket(out, "finishCall", recipient);
-
             });
 
             caller.start();
+
+
 
         } catch (SocketException e) {
             e.printStackTrace();
@@ -341,6 +352,9 @@ public class Client {
 
 
     public void callReceiver(DatagramSocket socket){
+
+        onCall.set(true);
+
         try {
             final int BUFFER_SIZE = 1024 + 4;
 
@@ -352,11 +366,12 @@ public class Client {
             sourceDataLine.open(audioFormat);
             sourceDataLine.start();
 
-            PlayerThread playerThread = new PlayerThread(audioFormat,BUFFER_SIZE );
+            PlayerThread playerThread = new PlayerThread(audioFormat,BUFFER_SIZE, onCall);
             playerThread.start();
 
             // Recibir los paquetes y reproducir el audio
             int count = 0;
+
             while (onCall.get()) {
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 socket.receive(packet);
@@ -380,6 +395,8 @@ public class Client {
 
             socket.close();
 
+
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -387,7 +404,9 @@ public class Client {
 
 
 
-    public  void senderCall(String ip, int port, HashMap<String, ConnectionInfo> map) throws Exception {
+    public  void senderCall(String ip, int port, ConcurrentHashMap<String, ConnectionInfo> map) throws Exception {
+        onCall.set(true);
+
 
         AudioFormat format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
         
@@ -429,7 +448,7 @@ public class Client {
                 }
             }
         }
-
+        line.close();
         socket.close();
     }
 
@@ -439,7 +458,7 @@ public class Client {
         socket.send(packet);
     }
 
-    public void sendAudioToGroup(HashMap<String, ConnectionInfo> connections,byte[] audioData, DatagramSocket socket ) throws Exception {
+    public void sendAudioToGroup(ConcurrentHashMap<String, ConnectionInfo> connections,byte[] audioData, DatagramSocket socket ) throws Exception {
 
 
         for (ConnectionInfo cInfo : connections.values()) {
@@ -595,7 +614,7 @@ public class Client {
         return in;
     }
 
-
+    
 
     public Scanner getScanner() {
         return scanner;
@@ -604,6 +623,28 @@ public class Client {
     public AtomicBoolean getOnCall() {
         return onCall;
     }
+
+
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+
+
+    public User getUser() {
+        return user;
+    }
+
+
+
+    public ConcurrentHashMap<String, ConnectionInfo> getGroupConnections() {
+        return groupConnections;
+    }
+
+
+
+    
     
 
 

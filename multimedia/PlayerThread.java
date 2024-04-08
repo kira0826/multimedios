@@ -1,6 +1,7 @@
 package multimedia;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -13,18 +14,20 @@ public class PlayerThread extends Thread {
     private SourceDataLine sourceDataLine;
     private int count = 0;
     private int packes = 0;
+    private AtomicBoolean onCall;
 
-    public PlayerThread(AudioFormat audioFormat,  int bufferSize) {
+    public PlayerThread(AudioFormat audioFormat,  int bufferSize, AtomicBoolean onCall) {
         try {
             MAX_ITEMS_IN_QUEUE = (int) audioFormat.getSampleRate() * secondsBuffer *
                     audioFormat.getFrameSize()
                     / bufferSize;
 
-            //System.out.println("Max items in queue: " + MAX_ITEMS_IN_QUEUE);
+            System.out.println("Max items in queue: " + MAX_ITEMS_IN_QUEUE);
             buffer = new ArrayBlockingQueue<>(MAX_ITEMS_IN_QUEUE, true);
             sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
             sourceDataLine.open(audioFormat);
             sourceDataLine.start();
+            this.onCall = onCall;
         } catch (Exception e) {
             e.printStackTrace();
 
@@ -42,11 +45,11 @@ public class PlayerThread extends Thread {
     }
 
     public void run() {
-        while (true) {
+        while (onCall.get()) {
             try {
                 if (buffer.isEmpty()) {
                     if (packes > 0) {
-                        //System.out.println("Packets: write " + packes + " add Count: " + count);
+                        System.out.println("Packets: write " + packes + " add Count: " + count);
                         packes = 0;
                         count = 0;
                     }
@@ -62,6 +65,9 @@ public class PlayerThread extends Thread {
                 e.printStackTrace();
             }
         }
+
+        sourceDataLine.close();
     }
+
 
 }
