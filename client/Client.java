@@ -126,7 +126,6 @@ public class Client {
                     
                     user.listAudioHistory();
 
-
                 }else if (messageDiv[0].equals("/Hmsj")){
                     
                     user.listMessageHistory();
@@ -281,7 +280,7 @@ public class Client {
         onCall.set(true);
 
         try{
-            DatagramSocket datagramSocket =  new DatagramSocket(0);
+            DatagramSocket datagramSocket =  new DatagramSocket(0,InetAddress.getByName(PropertiesConfig.getProperty("host")));
 
             Integer portMine = datagramSocket.getLocalPort();
             String addressMine = datagramSocket.getLocalAddress().getHostName();
@@ -308,7 +307,7 @@ public class Client {
 
         
         try {
-            DatagramSocket datagramSocket =  new DatagramSocket(0);
+            DatagramSocket datagramSocket =  new DatagramSocket(0, InetAddress.getByName(PropertiesConfig.getProperty("host")));
 
             Integer port = datagramSocket.getLocalPort();
             String address = datagramSocket.getLocalAddress().getHostName();
@@ -324,6 +323,8 @@ public class Client {
             caller.start();
 
         } catch (SocketException e) {
+            e.printStackTrace();
+        }catch (UnknownHostException e){
             e.printStackTrace();
         }
         
@@ -573,6 +574,13 @@ public class Client {
 
     public void sendAudioToGroup(ConcurrentHashMap<String, ConnectionInfo> connections,byte[] audioData, DatagramSocket socket ) throws Exception {
 
+
+        for (Map.Entry<String, ConnectionInfo> entry : connections.entrySet()) {
+
+            String username = entry.getKey();
+            ConnectionInfo connectionInfo = entry.getValue();
+            System.out.println("Username: " + username + " | Puerto: " + connectionInfo.getPort() + " | " + "Address"+connectionInfo.getAddress());
+        }
 
         for (ConnectionInfo cInfo : connections.values()) {
 
