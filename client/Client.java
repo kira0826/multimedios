@@ -452,7 +452,7 @@ public class Client {
         onCall.set(true);
 
         try {
-            final int BUFFER_SIZE = 1024 + 4;
+            final int BUFFER_SIZE = 1024 + 4 + 5;
 
             byte[] buffer = new byte[BUFFER_SIZE];
 
@@ -462,11 +462,10 @@ public class Client {
             sourceDataLine.open(audioFormat);
             sourceDataLine.start();
 
-            //System.out.println("despues del dataline");
-            PlayerThread playerThread = new PlayerThread(audioFormat,BUFFER_SIZE, onCall);
+            ConcurrentHashMap <String, PlayerThread> reproducers  = new ConcurrentHashMap<>();
 
-            //System.out.println("Boolean:" + onCall.get());
-            playerThread.start();
+            //System.out.println("despues del dataline");
+           
             //System.out.println("Desdepues del player start");
             // Recibir los paquetes y reproducir el audio
             int count = 0;
@@ -482,7 +481,17 @@ public class Client {
 
                 buffer = packet.getData();
                 ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+
+                byte[] name  = new byte[5];
+                byteBuffer.get(name, 0, name.length);
+
+                String reconstructedName = new String(name, java.nio.charset.StandardCharsets.UTF_8);
+
                 int packetCount = byteBuffer.getInt();
+
+
+                System.out.println("TAMAÑO DE REPRODUCTORES: " + reproducers.size() );
+
                 if (packetCount == -1) {
                     //System.out.println("Received last packet " + count);
                     break;
@@ -493,7 +502,18 @@ public class Client {
                     byte[] data = new byte[1024];
                     byteBuffer.get(data, 0, data.length);
                     // System.arraycopy(buffer, 0, data, 0, data.length);
-                    playerThread.addBytes(data);
+
+
+                    if (reproducers.containsKey(reconstructedName)) {
+
+                        reproducers.get(reconstructedName).addBytes(data);
+
+                    }else{
+
+                        reproducers.put(reconstructedName,new PlayerThread(audioFormat,BUFFER_SIZE, onCall) );
+                        reproducers.get(reconstructedName).addBytes(data);
+
+                    }
                     //System.out.println("Received packet " + packetCount + " current: " + count);
                     System.out.println("aca en el while de abajo");
 
@@ -501,7 +521,7 @@ public class Client {
                 count++;
             }
 
-            playerThread.join();
+            //playerThread.join();
 
             System.out.println("Finaliza el callReceiver.");
             sourceDataLine.close();
@@ -536,17 +556,24 @@ public class Client {
         sourceDataLine.open(format);
         sourceDataLine.start();
 
+
+
+        byte[] bytesUser = user.getUsername().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        int lengthInBytes = bytesUser.length;
+
+        if (lengthInBytes>5) System.out.println("Ojito se vino problem, nombre demasiado long, boofff"); 
+
         // Buffer para almacenar los datos de audio capturados
-        byte[] buffer = new byte[1024];
+        byte[] buffer = new byte[1024 +5];
         int bytesRead;
-        ByteBuffer byteBuffer = ByteBuffer.allocate(1028);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1024 + 4  + 5);
 
         DatagramSocket socket = new DatagramSocket();
 
 
-
         while (onCall.get()) {
             byteBuffer.clear();
+            byteBuffer.put(bytesUser);
             bytesRead = line.read(buffer, 0, buffer.length);
             if (bytesRead > 0) {
                 byteBuffer.putInt(bytesRead);

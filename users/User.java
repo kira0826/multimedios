@@ -16,14 +16,6 @@ public class User implements Serializable{
     private List<Audio> audioHistory; 
     private List<Message> messages; 
 
-
-
-    
-
-
-
-
-
     public User(String username, ConnectionInfo connectionInfo) {
         
         this.username = username;
