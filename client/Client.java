@@ -56,7 +56,7 @@ public class Client {
 
     private void init () throws IOException {
 
-
+        System.out.println("IP de donde sale: " + socket.getLocalAddress().getHostAddress());
         System.out.println("Por favor escribe el nombre de usuario");
 
                 
@@ -344,6 +344,9 @@ public class Client {
             Thread calling  = new Thread(()-> {
 
                 try {
+
+                    System.out.println("LLAMADOR:" + user.getUsername() + " | ENVIO : " + port + " | " + address);
+
                     senderCall(address, port,null);
 
                 } catch (Exception e) {
@@ -364,10 +367,11 @@ public class Client {
 
 
         try{
-            DatagramSocket datagramSocket =  new DatagramSocket(0);
+            DatagramSocket datagramSocket =  new DatagramSocket(0, InetAddress.getByName(PropertiesConfig.getProperty("host")) );
 
             Integer portMine = datagramSocket.getLocalPort();
             String addressMine = datagramSocket.getLocalAddress().getHostName();
+            System.out.println("RECEPTOR:" + user.getUsername() + " | RECEPCIÓN: " + portMine + " | " + addressMine);
 
             Sender.senderPacket(out, "callResponse", sender, user.getUsername(),  portMine, addressMine);
 
@@ -381,6 +385,8 @@ public class Client {
             Thread calling = new Thread(() ->{
                 
                 try {
+                    System.out.println("RECEPTOR:" + user.getUsername() + " | ENVIO : " + port + " | " + address);
+
                     senderCall(address, port,null );
                 } catch (Exception e) {
                     // TODO Auto-generated catch block
@@ -405,10 +411,12 @@ public class Client {
 
         
         try {
-            DatagramSocket datagramSocket =  new DatagramSocket(0);
+            DatagramSocket datagramSocket =  new DatagramSocket(0, InetAddress.getByName(PropertiesConfig.getProperty("host")));
 
             Integer port = datagramSocket.getLocalPort();
             String address = datagramSocket.getLocalAddress().getHostName();
+
+            System.out.println("LLamador:" + user.getUsername() + " | RECEPCIÓN: " + port + " | " + address);
 
             Sender.senderPacket(out, "requestCall", recipient, user.getUsername(), port, address);
 
@@ -426,6 +434,8 @@ public class Client {
 
         } catch (SocketException e) {
             e.printStackTrace();
+        }catch(UnknownHostException e){
+            e.printStackTrace();
         }
         
 
@@ -437,7 +447,7 @@ public class Client {
 
     public void callReceiver(DatagramSocket socket){
 
-        System.out.println("Entro en el call receiver");
+        //System.out.println("Entro en el call receiver");
         onCall.set(true);
 
         try {
@@ -451,23 +461,23 @@ public class Client {
             sourceDataLine.open(audioFormat);
             sourceDataLine.start();
 
-            System.out.println("despues del dataline");
+            //System.out.println("despues del dataline");
             PlayerThread playerThread = new PlayerThread(audioFormat,BUFFER_SIZE, onCall);
 
-            System.out.println("Boolean:" + onCall.get());
+            //System.out.println("Boolean:" + onCall.get());
             playerThread.start();
-            System.out.println("Desdepues del player start");
+            //System.out.println("Desdepues del player start");
             // Recibir los paquetes y reproducir el audio
             int count = 0;
             while (onCall.get()) {
 
-                System.out.println("aca en el while de arriba");
+                //System.out.println("aca en el while de arriba");
 
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-                System.out.println("antes del receive");
+                //System.out.println("antes del receive");
                 socket.receive(packet);
-                System.out.println("Despues del receive");
+                //System.out.println("Despues del receive");
 
                 buffer = packet.getData();
                 ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
@@ -556,6 +566,8 @@ public class Client {
     public  void sendAudioCall(String ip, int port, byte[] audioData, DatagramSocket socket) throws Exception {
         InetAddress address = InetAddress.getByName(ip);
         DatagramPacket packet = new DatagramPacket(audioData, audioData.length, address, port);
+
+
         socket.send(packet);
     }
 
