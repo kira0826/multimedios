@@ -8,6 +8,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.SourceDataLine;
 
 public class PlayerThread extends Thread {
+
     private static int MAX_ITEMS_IN_QUEUE = 3;
     private int secondsBuffer = 280;
     BlockingQueue<byte[]> buffer;
@@ -63,7 +64,7 @@ public class PlayerThread extends Thread {
                 byte[] bytes = buffer.poll();
                 packes++;
 
-                System.out.println("Reproduciendo");
+                //System.out.println(onCall.get());
                 sourceDataLine.write(bytes, 0, bytes.length);
 
                 //System.out.println("En PLayer thread" + counter++);
@@ -75,6 +76,7 @@ public class PlayerThread extends Thread {
             e.printStackTrace();
         }
 
+        sourceDataLine.close();
         System.out.println("Fuera de player");
 
     }

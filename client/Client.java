@@ -231,8 +231,13 @@ public class Client {
     public void finishCall(){
 
 
-        System.out.println("Seteo falso no incial");
+        System.out.println("Seteo falso no inciala");
         onCall.set(false);
+
+        onCall.compareAndExchange(true, false);
+
+        groupConnections.clear();
+
 
     }
 
@@ -242,15 +247,14 @@ public class Client {
 
     public void intialCallFinisher(){
 
+        System.out.println("Initial finisher");
+
         onCall.set(false);
 
-        
-            for (String user : groupConnections.keySet()) {
-                System.out.println(user);
-            }
-        
 
         Sender.senderPacket(out, "finishCall", groupConnections);
+
+        groupConnections.clear();
 
     }
 
@@ -301,6 +305,13 @@ public class Client {
         }
     }
 
+
+    /**
+     * Solicitar llamada grupal:
+     * 
+     * 
+     * @param group
+     */
     public void requestGroupCall(String group){
 
         onCall.set(true);
@@ -451,6 +462,8 @@ public class Client {
         //System.out.println("Entro en el call receiver");
         onCall.set(true);
 
+        SourceDataLine sourceDataLine = null;
+
         try {
             final int BUFFER_SIZE = 1024 + 4 + 5;
 
@@ -458,7 +471,7 @@ public class Client {
 
             // Configurar el reproductor de audio
             AudioFormat audioFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
-            SourceDataLine sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
+            sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
             sourceDataLine.open(audioFormat);
             sourceDataLine.start();
 
@@ -466,8 +479,8 @@ public class Client {
 
             //System.out.println("despues del dataline");
            
-            //System.out.println("Desdepues del player start");
-            // Recibir los paquetes y reproducir el audio
+            System.out.println("Booleano: " + onCall.get());
+
             int count = 0;
             while (onCall.get()) {
 
@@ -475,9 +488,9 @@ public class Client {
 
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-                //System.out.println("antes del receive");
+                System.out.println("antes del receive");
                 socket.receive(packet);
-                //System.out.println("Despues del receive");
+                System.out.println("Despues del receive");
 
                 buffer = packet.getData();
                 ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
@@ -489,12 +502,12 @@ public class Client {
 
                 int packetCount = byteBuffer.getInt();
 
-
-                System.out.println("TAMAÑO DE REPRODUCTORES: " + reproducers.size() );
+                //5r                                                                                                                                                                            hSystem.out.println(reconstructedName);
 
                 if (packetCount == -1) {
-                    //System.out.println("Received last packet " + count);
-                    break;
+
+                    System.out.println("-1 Alert");
+
                 } else {
 
                     if (!onCall.get()) break;
@@ -502,7 +515,8 @@ public class Client {
                     byte[] data = new byte[1024];
                     byteBuffer.get(data, 0, data.length);
                     // System.arraycopy(buffer, 0, data, 0, data.length);
-
+                
+                    System.out.println(reconstructedName);
 
                     if (reproducers.containsKey(reconstructedName)) {
 
@@ -511,19 +525,16 @@ public class Client {
                     }else{
 
                         reproducers.put(reconstructedName,new PlayerThread(audioFormat,BUFFER_SIZE, onCall) );
+                        reproducers.get(reconstructedName).start();
                         reproducers.get(reconstructedName).addBytes(data);
 
                     }
-                    //System.out.println("Received packet " + packetCount + " current: " + count);
-                    System.out.println("aca en el while de abajo");
+
+                    System.out.println(onCall.get());
 
                 }
-                count++;
             }
 
-            //playerThread.join();
-
-            System.out.println("Finaliza el callReceiver.");
             sourceDataLine.close();
             socket.close();
 
@@ -532,6 +543,9 @@ public class Client {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        sourceDataLine.close();
+        socket.close();
+        System.out.println("Finaliza el callReceiver.");
     }
 
 
@@ -561,20 +575,22 @@ public class Client {
         byte[] bytesUser = user.getUsername().getBytes(java.nio.charset.StandardCharsets.UTF_8);
         int lengthInBytes = bytesUser.length;
 
-        if (lengthInBytes>5) System.out.println("Ojito se vino problem, nombre demasiado long, boofff"); 
-
         // Buffer para almacenar los datos de audio capturados
-        byte[] buffer = new byte[1024 +5];
+        byte[] buffer = new byte[1024 ];
         int bytesRead;
         ByteBuffer byteBuffer = ByteBuffer.allocate(1024 + 4  + 5);
 
         DatagramSocket socket = new DatagramSocket();
 
+        System.out.println("Booleano de reciver" + onCall.get());
 
         while (onCall.get()) {
+
             byteBuffer.clear();
+
             byteBuffer.put(bytesUser);
             bytesRead = line.read(buffer, 0, buffer.length);
+
             if (bytesRead > 0) {
                 byteBuffer.putInt(bytesRead);
                 byteBuffer.put(buffer, 0, bytesRead);
@@ -601,20 +617,26 @@ public class Client {
 
     public void sendAudioToGroup(ConcurrentHashMap<String, ConnectionInfo> connections,byte[] audioData, DatagramSocket socket ) throws Exception {
 
-
+        /* 
         for (Map.Entry<String, ConnectionInfo> entry : connections.entrySet()) {
 
             String username = entry.getKey();
             ConnectionInfo connectionInfo = entry.getValue();
             System.out.println("Username: " + username + " | Puerto: " + connectionInfo.getPort() + " | " + "Address"+connectionInfo.getAddress());
         }
+        */
 
-        for (ConnectionInfo cInfo : connections.values()) {
 
-            InetAddress address = InetAddress.getByName(cInfo.getAddress());
-            DatagramPacket packet = new DatagramPacket(audioData, audioData.length, address, cInfo.getPort());
-            socket.send(packet);
-   
+        //quitarme de las connections.
+        for (String userConnection : connections.keySet()) {
+
+            if (!userConnection.equals(user.getUsername())) {
+                
+                InetAddress address = InetAddress.getByName(connections.get(userConnection).getAddress());
+                DatagramPacket packet = new DatagramPacket(audioData, audioData.length, address, connections.get(userConnection).getPort());
+                socket.send(packet);
+
+            }
         }
     }
 

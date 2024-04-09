@@ -75,10 +75,6 @@ public class Receiver <T> {
 
 
         }
-        
-
-        
-
             
         } catch (IllegalAccessException e) {
             // TODO Auto-generated catch block
