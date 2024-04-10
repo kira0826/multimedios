@@ -185,7 +185,12 @@ public class DedicatedServer implements Runnable{
         while (groupParticipants.size() > selectedGroup.getConnections().size()) {
         int actual = selectedGroup.getConnections().size();
 
+            //System.out.println("Verificando xd: " + "suscritos: " + actual + " esperados: " + groupParticipants.size() );
             
+            // agregar elementos al map
+            for (String key : selectedGroup.getConnections().keySet()) {
+                System.out.println("Usuario registrado: " + key);
+            }
             
             if (actual != previous ) {
         
@@ -227,12 +232,8 @@ public class DedicatedServer implements Runnable{
 
         for (String  participant : toFinishCall.keySet()) {
 
-            if (!participant.equals(userForDedicated.getUsername())) {
-                
-                DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(participant);
-                Sender.senderPacket(dedicatedServer.out, "finishCall", null);
-                
-            }
+            DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(participant);
+            Sender.senderPacket(dedicatedServer.out, "finishCall", null);
 
         }       
     }

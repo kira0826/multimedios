@@ -231,7 +231,7 @@ public class Client {
     public void finishCall(){
 
 
-        System.out.println("Seteo falso no inciala");
+        System.out.println("Seteo falso no incial");
         onCall.set(false);
 
         onCall.compareAndExchange(true, false);
@@ -247,10 +247,13 @@ public class Client {
 
     public void intialCallFinisher(){
 
-        System.out.println("Initial finisher");
-
         onCall.set(false);
 
+        
+            for (String user : groupConnections.keySet()) {
+                System.out.println(user);
+            }
+        
 
         Sender.senderPacket(out, "finishCall", groupConnections);
 
@@ -305,13 +308,6 @@ public class Client {
         }
     }
 
-
-    /**
-     * Solicitar llamada grupal:
-     * 
-     * 
-     * @param group
-     */
     public void requestGroupCall(String group){
 
         onCall.set(true);
@@ -462,8 +458,6 @@ public class Client {
         //System.out.println("Entro en el call receiver");
         onCall.set(true);
 
-        SourceDataLine sourceDataLine = null;
-
         try {
             final int BUFFER_SIZE = 1024 + 4 + 5;
 
@@ -471,7 +465,7 @@ public class Client {
 
             // Configurar el reproductor de audio
             AudioFormat audioFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
-            sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
+            SourceDataLine sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
             sourceDataLine.open(audioFormat);
             sourceDataLine.start();
 
@@ -480,7 +474,6 @@ public class Client {
             //System.out.println("despues del dataline");
            
             System.out.println("Booleano: " + onCall.get());
-
             int count = 0;
             while (onCall.get()) {
 
@@ -488,9 +481,9 @@ public class Client {
 
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-                System.out.println("antes del receive");
+                //System.out.println("antes del receive");
                 socket.receive(packet);
-                System.out.println("Despues del receive");
+                //System.out.println("Despues del receive");
 
                 buffer = packet.getData();
                 ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
@@ -535,6 +528,8 @@ public class Client {
                 }
             }
 
+            //playerThread.join();
+
             sourceDataLine.close();
             socket.close();
 
@@ -543,8 +538,7 @@ public class Client {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        sourceDataLine.close();
-        socket.close();
+
         System.out.println("Finaliza el callReceiver.");
     }
 
@@ -583,14 +577,10 @@ public class Client {
         DatagramSocket socket = new DatagramSocket();
 
         System.out.println("Booleano de reciver" + onCall.get());
-
         while (onCall.get()) {
-
             byteBuffer.clear();
-
             byteBuffer.put(bytesUser);
             bytesRead = line.read(buffer, 0, buffer.length);
-
             if (bytesRead > 0) {
                 byteBuffer.putInt(bytesRead);
                 byteBuffer.put(buffer, 0, bytesRead);
@@ -626,17 +616,12 @@ public class Client {
         }
         */
 
+        for (ConnectionInfo cInfo : connections.values()) {
 
-        //quitarme de las connections.
-        for (String userConnection : connections.keySet()) {
-
-            if (!userConnection.equals(user.getUsername())) {
-                
-                InetAddress address = InetAddress.getByName(connections.get(userConnection).getAddress());
-                DatagramPacket packet = new DatagramPacket(audioData, audioData.length, address, connections.get(userConnection).getPort());
-                socket.send(packet);
-
-            }
+            InetAddress address = InetAddress.getByName(cInfo.getAddress());
+            DatagramPacket packet = new DatagramPacket(audioData, audioData.length, address, cInfo.getPort());
+            socket.send(packet);
+   
         }
     }
 
