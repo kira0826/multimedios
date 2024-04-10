@@ -24,7 +24,9 @@ Realizar una llamada a un usuario o grupo: Se utilizará el protocolo UDP para l
 
 ### **Pasos para ejecutar el proyecto**
 
-El primer paso a ejecutar es generar los archivos .class, para ello, estando ubicaodo en la carpeta
+El primer paso es modificar el archivo .properties, modificando la dirección del servidor y del host (dirección de la máquina en la que voy a ejecutar la aplicación).
+
+Luego, debemos generar los archivos .class, para ello, estando ubicado en la carpeta
 multimedios se ejecuta lo siguiente:
 
 ```
