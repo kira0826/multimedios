@@ -613,10 +613,9 @@ public class Client {
 
         for (Map.Entry<String, ConnectionInfo> entry : connections.entrySet()){
 
-            if (!entry.equals(user.getUsername())) {
+            if (!entry.getKey().equals(user.getUsername())) {
 
-            InetAddress address = InetAddress.getByName(cInfo.getAddress());
-            DatagramPacket packet = new DatagramPacket(audioData, audioData.length, address, cInfo.getPort());
+            DatagramPacket packet = new DatagramPacket(audioData, audioData.length, InetAddress.getByName(entry.getValue().getAddress()), entry.getValue().getPort());
             socket.send(packet);
                 
             }
