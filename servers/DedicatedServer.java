@@ -3,6 +3,7 @@ package servers;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import protocolos.*;
@@ -148,7 +149,6 @@ public class DedicatedServer implements Runnable{
             WareHouse.getInstance().fillConnectionInfoForGroupParticipant(group, userForDedicated.getUsername(), new ConnectionInfo(port, address));
         
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
@@ -156,22 +156,15 @@ public class DedicatedServer implements Runnable{
 
         try {
             selectedGroup = WareHouse.getInstance().getStringToGroup().get(group);
+
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
-        
-        /* for (String key : selectedGroup.getConnectionInfoForGroupOperations().keySet()) {
-            System.out.println("Usuario registrado: " + key);
-        } */
-
-        
-
-
         ArrayList<String> groupParticipants =  selectedGroup.getUsersSubscribed();
 
-        System.out.println( groupParticipants.toString());
+        System.out.println( "USUARIOS SUSCRITOS" + groupParticipants.toString());
 
         for (String participantString : groupParticipants) {
 
@@ -190,7 +183,7 @@ public class DedicatedServer implements Runnable{
         while (groupParticipants.size() > selectedGroup.getConnections().size()) {
         int actual = selectedGroup.getConnections().size();
 
-            //System.out.println("Verificando xd: " + "suscritos: " + actual + " esperados: " + groupParticipants.size() );
+            System.out.println("Verificando xd: " + "suscritos: " + actual + " esperados: " + groupParticipants.size() );
             
             // agregar elementos al map
             for (String key : selectedGroup.getConnections().keySet()) {
@@ -207,13 +200,29 @@ public class DedicatedServer implements Runnable{
             
         }
 
+        System.out.println("ANTES DE ESTABLECER SENDER");
+
+
+        for (String entry : selectedGroup.getConnections().keySet()) {
+
+            System.out.println("Usuario: " + entry+ " | CI: " + selectedGroup.getConnections().get(entry).getPort() + " | " + selectedGroup.getConnections().get(entry).getAddress());
+
+        }
+
+        System.out.println("Largo de conexiones: " + selectedGroup.getConnections().size());
+
+
+        System.out.println(selectedGroup.getConnections().toString());
+
         for (String participantString : groupParticipants) {
-                
+
             DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(participantString);
-            Sender.senderPacket(dedicatedServer.out, "setSenderToCallGroup", selectedGroup.getConnections());
-            
+            Sender.senderPacket(dedicatedServer.out, "setSenderToCallGroup", selectedGroup.getConnections().toString());
+
         }
     }
+
+    
 
 
     public void fillGroupConnectionInfo(String group, String user, Integer port, String address){

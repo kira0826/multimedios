@@ -256,14 +256,14 @@ public class Client {
 
     }
 
-
-    public void setSenderToCallGroup(ConcurrentHashMap<String, ConnectionInfo> connections){
+public void setSenderToCallGroup(String connections){
 
         for (Map.Entry<String,  ConnectionInfo> entry : connections.entrySet()) {
 
             System.out.println("Usuario: " + entry.getKey() + " | CI: " + entry.getValue().getPort() + " | " + entry.getValue().getAddress() );
 
         }
+    
 
         groupConnections = connections;
 
