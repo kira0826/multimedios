@@ -220,7 +220,6 @@ public class DedicatedServer implements Runnable{
             ConnectionInfo cInfo  = selectedGroup.getConnections().get(entry);
 
             normalConnections.put(entry, cInfo);
-            System.out.println("Usuario: " + entry+ " | CI: " + selectedGroup.getConnections().get(entry).getPort() + " | " + selectedGroup.getConnections().get(entry).getAddress());
 
         }
 

@@ -458,6 +458,8 @@ public void setSenderToCallGroup(HashMap<String, ConnectionInfo> connections){
         //System.out.println("Entro en el call receiver");
         onCall.set(true);
 
+        SourceDataLine sourceDataLine =null;
+
         try {
             final int BUFFER_SIZE = 1024 + 4 + 5;
 
@@ -465,7 +467,7 @@ public void setSenderToCallGroup(HashMap<String, ConnectionInfo> connections){
 
             // Configurar el reproductor de audio
             AudioFormat audioFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false);
-            SourceDataLine sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
+            sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
             sourceDataLine.open(audioFormat);
             sourceDataLine.start();
 
@@ -475,6 +477,8 @@ public void setSenderToCallGroup(HashMap<String, ConnectionInfo> connections){
            
             System.out.println("Booleano: " + onCall.get());
             int count = 0;
+            socket.setSoTimeout(3000);  // Establecer un tiempo de espera de 5 segundos
+
             while (onCall.get()) {
 
                 //System.out.println("aca en el while de arriba");
@@ -535,7 +539,12 @@ public void setSenderToCallGroup(HashMap<String, ConnectionInfo> connections){
 
 
 
-        } catch (Exception e) {
+        } catch (SocketTimeoutException e) {
+
+            System.out.println("SE SUPERA EL TIEMPO SIN ENVIO, POR TANTO SE CIERRA.");
+            socket.close();
+            sourceDataLine.close();
+        }catch (Exception e) {
             e.printStackTrace();
         }
 
