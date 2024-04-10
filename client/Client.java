@@ -256,16 +256,15 @@ public class Client {
 
     }
 
-public void setSenderToCallGroup(String connections){
+public void setSenderToCallGroup(HashMap<String, ConnectionInfo> connections){
+
 
         for (Map.Entry<String,  ConnectionInfo> entry : connections.entrySet()) {
 
             System.out.println("Usuario: " + entry.getKey() + " | CI: " + entry.getValue().getPort() + " | " + entry.getValue().getAddress() );
 
         }
-    
 
-        groupConnections = connections;
 
         onCall.set(true);
 
@@ -545,7 +544,7 @@ public void setSenderToCallGroup(String connections){
 
 
 
-    public  void senderCall(String ip, int port, ConcurrentHashMap<String, ConnectionInfo> map) throws Exception {
+    public  void senderCall(String ip, int port, HashMap<String, ConnectionInfo> map) throws Exception {
         onCall.set(true);
 
 
@@ -606,7 +605,7 @@ public void setSenderToCallGroup(String connections){
         socket.send(packet);
     }
 
-    public void sendAudioToGroup(ConcurrentHashMap<String, ConnectionInfo> connections,byte[] audioData, DatagramSocket socket ) throws Exception {
+    public void sendAudioToGroup(HashMap<String, ConnectionInfo> connections,byte[] audioData, DatagramSocket socket ) throws Exception {
 
         /* 
         for (Map.Entry<String, ConnectionInfo> entry : connections.entrySet()) {

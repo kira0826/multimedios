@@ -3,6 +3,7 @@ package servers;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -211,13 +212,22 @@ public class DedicatedServer implements Runnable{
 
         System.out.println("Largo de conexiones: " + selectedGroup.getConnections().size());
 
+        HashMap<String, ConnectionInfo> normalConnections = new HashMap<>();
 
-        System.out.println(selectedGroup.getConnections().toString());
+
+        for (String entry : selectedGroup.getConnections().keySet()) {
+
+            ConnectionInfo cInfo  = selectedGroup.getConnections().get(entry);
+
+            normalConnections.put(entry, cInfo);
+            System.out.println("Usuario: " + entry+ " | CI: " + selectedGroup.getConnections().get(entry).getPort() + " | " + selectedGroup.getConnections().get(entry).getAddress());
+
+        }
 
         for (String participantString : groupParticipants) {
 
             DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(participantString);
-            Sender.senderPacket(dedicatedServer.out, "setSenderToCallGroup", selectedGroup.getConnections().toString());
+            Sender.senderPacket(dedicatedServer.out, "setSenderToCallGroup", normalConnections);
 
         }
     }
