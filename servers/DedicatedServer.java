@@ -141,7 +141,12 @@ public class DedicatedServer implements Runnable{
 
 
         try {
+
+            //Se borra las conecciones establecidas
+
+            WareHouse.getInstance().getStringToGroup().get(group).getConnections().clear();
             WareHouse.getInstance().fillConnectionInfoForGroupParticipant(group, userForDedicated.getUsername(), new ConnectionInfo(port, address));
+        
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -231,9 +236,12 @@ public class DedicatedServer implements Runnable{
         System.out.println("Integrantes: " + toFinishCall.keySet().toString());
 
         for (String  participant : toFinishCall.keySet()) {
-
-            DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(participant);
-            Sender.senderPacket(dedicatedServer.out, "finishCall", null);
+            
+            if (!participant.equals(userForDedicated.getUsername())) {
+                
+                DedicatedServer dedicatedServer = receptionist.getUserToDedicatedServer().get(participant);
+                Sender.senderPacket(dedicatedServer.out, "finishCall", null);
+            }
 
         }       
     }

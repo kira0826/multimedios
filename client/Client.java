@@ -233,6 +233,7 @@ public class Client {
 
         System.out.println("Seteo falso no incial");
         onCall.set(false);
+        groupConnections.clear();
 
     }
 
@@ -251,11 +252,18 @@ public class Client {
         
 
         Sender.senderPacket(out, "finishCall", groupConnections);
+        groupConnections.clear();
 
     }
 
 
     public void setSenderToCallGroup(ConcurrentHashMap<String, ConnectionInfo> connections){
+
+        for (Map.Entry<String,  ConnectionInfo> entry : connections.entrySet()) {
+
+            System.out.println("Usuario: " + entry.getKey() + " | CI: " + entry.getValue().getPort() + " | " + entry.getValue().getAddress() );
+
+        }
 
         groupConnections = connections;
 
@@ -502,7 +510,7 @@ public class Client {
                     byteBuffer.get(data, 0, data.length);
                     // System.arraycopy(buffer, 0, data, 0, data.length);
                 
-                    System.out.println(reconstructedName);
+                    //System.out.println(reconstructedName);
 
                     if (reproducers.containsKey(reconstructedName)) {
 
@@ -516,7 +524,7 @@ public class Client {
 
                     }
 
-                    System.out.println(onCall.get());
+                    //System.out.println(onCall.get());
 
                 }
             }

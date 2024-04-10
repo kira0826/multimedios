@@ -63,7 +63,7 @@ public class PlayerThread extends Thread {
                 byte[] bytes = buffer.poll();
                 packes++;
 
-                System.out.println("Reproduciendo");
+                //System.out.println("Reproduciendo");
                 sourceDataLine.write(bytes, 0, bytes.length);
 
                 //System.out.println("En PLayer thread" + counter++);
