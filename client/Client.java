@@ -609,13 +609,19 @@ public class Client {
         }
         */
 
-        for (ConnectionInfo cInfo : connections.values()) {
+
+
+        for (Map.Entry<String, ConnectionInfo> entry : connections.entrySet()){
+
+            if (!entry.equals(user.getUsername())) {
 
             InetAddress address = InetAddress.getByName(cInfo.getAddress());
             DatagramPacket packet = new DatagramPacket(audioData, audioData.length, address, cInfo.getPort());
             socket.send(packet);
-   
+                
+            }
         }
+
     }
 // Envio de audios:
 
